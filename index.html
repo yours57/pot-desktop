@@ -13,6 +13,15 @@
         />
         <script>
             var Module;
+            // Apply theme from localStorage before React renders to prevent flash
+            try {
+                var __t = localStorage.getItem('theme');
+                if (__t === 'dark' || __t === 'light') {
+                    document.documentElement.classList.add(__t);
+                } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch(e) {}
         </script>
         <title>Pot</title>
     </head>

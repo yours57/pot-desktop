@@ -23,8 +23,17 @@ export default function Updater() {
     const toastStyle = useToastStyle();
 
     useEffect(() => {
+        let handler;
+        let fallback;
         if (appWindow.label === 'updater') {
-            appWindow.show();
+            if (window.__potThemeReady) {
+                appWindow.show();
+            } else {
+                // Wait for App.jsx to confirm the correct theme before showing to prevent flash
+                handler = () => { clearTimeout(fallback); appWindow.show(); };
+                window.addEventListener('pot-theme-ready', handler, { once: true });
+                fallback = setTimeout(() => { window.removeEventListener('pot-theme-ready', handler); appWindow.show(); }, 500);
+            }
         }
         checkUpdate().then(
             (update) => {
@@ -52,6 +61,7 @@ export default function Updater() {
                 }
             });
         }
+        return () => { handler && window.removeEventListener('pot-theme-ready', handler); clearTimeout(fallback); };
     }, []);
 
     return (

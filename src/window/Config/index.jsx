@@ -18,9 +18,17 @@ export default function Config() {
     const page = useRoutes(routes);
 
     useEffect(() => {
-        if (appWindow.label === 'config') {
+        if (appWindow.label !== 'config') return;
+        if (window.__potThemeReady) {
             appWindow.show();
+            return;
         }
+        // Wait for App.jsx to confirm the correct theme before showing to prevent flash
+        let fallback;
+        const handler = () => { clearTimeout(fallback); appWindow.show(); };
+        window.addEventListener('pot-theme-ready', handler, { once: true });
+        fallback = setTimeout(() => { window.removeEventListener('pot-theme-ready', handler); appWindow.show(); }, 500);
+        return () => { window.removeEventListener('pot-theme-ready', handler); clearTimeout(fallback); };
     }, []);
 
     return (

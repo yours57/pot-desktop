@@ -26,6 +26,14 @@ const windowMap = {
     updater: <Updater />,
 };
 
+// Signal that the app has confirmed the correct theme. Called once per window session.
+function signalThemeReady() {
+    if (!window.__potThemeReady) {
+        window.__potThemeReady = true;
+        window.dispatchEvent(new Event('pot-theme-ready'));
+    }
+}
+
 export default function App() {
     const [devMode] = useConfig('dev_mode', false);
     const [appTheme] = useConfig('app_theme', 'system');
@@ -77,6 +85,7 @@ export default function App() {
         if (appTheme !== null) {
             if (appTheme !== 'system') {
                 setTheme(appTheme);
+                signalThemeReady();
             } else {
                 let cancelled = false;
                 let unlisten;
@@ -88,13 +97,16 @@ export default function App() {
                             const scheme = await invoke('get_color_scheme');
                             if (!cancelled && (scheme === 'dark' || scheme === 'light')) {
                                 setTheme(scheme);
+                                signalThemeReady();
                             } else if (!cancelled) {
                                 setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                                signalThemeReady();
                             }
                         } catch {
                             if (!cancelled) {
                                 try {
                                     setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                                    signalThemeReady();
                                 } catch {
                                     warn("Can't detect system theme.");
                                 }
@@ -110,6 +122,7 @@ export default function App() {
                     } else {
                         try {
                             setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                            signalThemeReady();
                             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
                                 setTheme(e.matches ? 'dark' : 'light');
                             });

@@ -29,6 +29,18 @@ export const detectLanguageAtom = atom('');
 let unlisten = null;
 let timer = null;
 
+function showWindowWhenReady(callback) {
+    const doShow = () => { appWindow.show(); callback && callback(); };
+    if (window.__potThemeReady) {
+        doShow();
+        return;
+    }
+    let fallback;
+    const handler = () => { clearTimeout(fallback); doShow(); };
+    window.addEventListener('pot-theme-ready', handler, { once: true });
+    fallback = setTimeout(() => { window.removeEventListener('pot-theme-ready', handler); doShow(); }, 500);
+}
+
 export default function SourceArea(props) {
     const { pluginList, serviceInstanceConfigMap } = props;
     const [appFontSize] = useConfig('app_font_size', 16);
@@ -54,15 +66,13 @@ export default function SourceArea(props) {
         if (hideWindow) {
             appWindow.hide();
         } else {
-            appWindow.show();
-            appWindow.setFocus();
+            showWindowWhenReady(() => appWindow.setFocus());
         }
         // 清空检测语言
         setDetectLanguage('');
         if (text === '[INPUT_TRANSLATE]') {
             setWindowType('[INPUT_TRANSLATE]');
-            appWindow.show();
-            appWindow.setFocus();
+            showWindowWhenReady(() => appWindow.setFocus());
             setSourceText('', true);
         } else if (text === '[IMAGE_TRANSLATE]') {
             setWindowType('[IMAGE_TRANSLATE]');
