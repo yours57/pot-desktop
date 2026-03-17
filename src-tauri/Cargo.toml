@@ -51,6 +51,8 @@ window-shadows = "0.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 #openssl
+zbus = { version = "3", features = ["tokio"] }
+futures-util = "0.3"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

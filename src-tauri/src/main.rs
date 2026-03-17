@@ -8,6 +8,8 @@ mod config;
 mod error;
 mod hotkey;
 mod lang_detect;
+#[cfg(target_os = "linux")]
+mod linux_theme;
 mod screenshot;
 mod server;
 mod system_ocr;
@@ -125,6 +127,12 @@ fn main() {
                 clipboard_monitor.to_string(),
             )));
             start_clipboard_monitor(app.handle());
+            // Start Linux D-Bus system theme watcher
+            #[cfg(target_os = "linux")]
+            {
+                let app_handle = app.handle();
+                tauri::async_runtime::spawn(linux_theme::watch_system_theme(app_handle));
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -147,7 +155,8 @@ fn main() {
             local,
             install_plugin,
             font_list,
-            aliyun
+            aliyun,
+            get_color_scheme
         ])
         .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())

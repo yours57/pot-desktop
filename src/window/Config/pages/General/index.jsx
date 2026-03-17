@@ -301,21 +301,6 @@ export default function General() {
                                         setAppTheme(key);
                                         if (key !== 'system') {
                                             setTheme(key);
-                                        } else {
-                                            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                                                setTheme('dark');
-                                            } else {
-                                                setTheme('light');
-                                            }
-                                            window
-                                                .matchMedia('(prefers-color-scheme: dark)')
-                                                .addEventListener('change', (e) => {
-                                                    if (e.matches) {
-                                                        setTheme('dark');
-                                                    } else {
-                                                        setTheme('light');
-                                                    }
-                                                });
                                         }
                                     }}
                                 >

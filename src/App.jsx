@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { warn } from 'tauri-plugin-log-api';
 import React, { useEffect } from 'react';
 import { useTheme } from 'next-themes';
+import { listen } from '@tauri-apps/api/event';
+import { os } from '@tauri-apps/api';
 
 import { invoke } from '@tauri-apps/api/tauri';
 import Screenshot from './window/Screenshot';
@@ -76,22 +78,50 @@ export default function App() {
             if (appTheme !== 'system') {
                 setTheme(appTheme);
             } else {
-                try {
-                    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                        setTheme('dark');
-                    } else {
-                        setTheme('light');
-                    }
-                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-                        if (e.matches) {
-                            setTheme('dark');
-                        } else {
-                            setTheme('light');
+                let cancelled = false;
+                let unlisten;
+                os.platform().then(async (platform) => {
+                    if (cancelled) return;
+                    if (platform === 'linux') {
+                        // Linux: query portal directly, skip matchMedia (unreliable on KDE Wayland)
+                        try {
+                            const scheme = await invoke('get_color_scheme');
+                            if (!cancelled && (scheme === 'dark' || scheme === 'light')) {
+                                setTheme(scheme);
+                            } else if (!cancelled) {
+                                setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                            }
+                        } catch {
+                            if (!cancelled) {
+                                try {
+                                    setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                                } catch {
+                                    warn("Can't detect system theme.");
+                                }
+                            }
                         }
-                    });
-                } catch {
-                    warn("Can't detect system theme.");
-                }
+                        if (!cancelled) {
+                            listen('system-theme-changed', (event) => {
+                                setTheme(event.payload);
+                            }).then((fn) => {
+                                if (cancelled) fn(); else unlisten = fn;
+                            }).catch(() => {});
+                        }
+                    } else {
+                        try {
+                            setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                                setTheme(e.matches ? 'dark' : 'light');
+                            });
+                        } catch {
+                            warn("Can't detect system theme.");
+                        }
+                    }
+                });
+                return () => {
+                    cancelled = true;
+                    if (unlisten) unlisten();
+                };
             }
         }
     }, [appTheme]);

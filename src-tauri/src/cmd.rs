@@ -225,3 +225,15 @@ pub fn open_devtools(window: tauri::Window) {
         window.close_devtools();
     }
 }
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+pub async fn get_color_scheme() -> String {
+    crate::linux_theme::query_color_scheme().await
+}
+
+#[cfg(not(target_os = "linux"))]
+#[tauri::command]
+pub fn get_color_scheme() -> String {
+    "no-preference".to_string()
+}
